@@ -111,7 +111,7 @@ The system uses a **TCP/IP socket-based architecture** where:
    - Lunch and evening peaks
    - Budget-conscious
 
-5. **Fraud-Prone Users** (IDs 13, 14, 15):
+5. **Fraud-Prone Users** (find out who...):
    - 10-15% fraud probability
    - Specific attack patterns
    - Used for training detection models
