@@ -192,36 +192,76 @@ Data-Stream/
 
 ## Usage
 
-### Classroom Setup (Recommended)
+### Three Ways to Use This System
 
-#### Teacher's Computer (Server)
+The streaming system supports three deployment scenarios, from simple to collaborative:
 
-1. **Create WiFi Hotspot** using phone
-2. **Connect computer** to hotspot
-3. **Find IP address**:
-   ```bash
-   # Mac/Linux
-   ifconfig | grep inet
-   # Look for: inet 192.168.1.5
-   
-   # Windows
-   ipconfig
-   # Look for: IPv4 Address
-   ```
-4. **Start fraud detection server**:
-   ```bash
-   python3 fraud_stream_server.py --host 0.0.0.0 --port 5555 --interval 0.5
-   ```
+#### 1️⃣ Individual Work (Single Machine)
+Perfect for homework, individual practice, and model development.
 
-#### Students' Computers (Clients)
+```bash
+# Terminal 1: Start your own server
+python3 fraud_stream_server.py --host localhost --port 5555
 
-1. **Connect to same hotspot**
-2. **Run visual client** with teacher's IP:
-   ```bash
-   python3 stream_client_visual.py --host 192.168.1.5 --port 5555 --id YourName
-   ```
+# Terminal 2: Connect your client
+python3 stream_client_visual.py --host localhost --port 5555 --id YourName
 
-### Local Testing
+# Terminal 3: Run your fraud detector
+python3 your_fraud_detector.py --host localhost --port 5555
+```
+
+#### 2️⃣ Group Work (Same Network)
+For lab partners or study groups sharing data streams.
+
+**On the server machine (one group member):**
+```bash
+# Find your IP address
+ifconfig | grep inet  # Look for 192.168.x.x or 10.x.x.x
+
+# Start server accepting network connections
+python3 fraud_stream_server.py --host 0.0.0.0 --port 5555
+```
+
+**On other group members' machines:**
+```bash
+# Connect to group member's server
+python3 stream_client_visual.py --host 192.168.1.5 --port 5555 --id StudentName
+# Replace 192.168.1.5 with actual server IP
+```
+
+#### 3️⃣ Classroom Mode (Instructor Server)
+Entire class connects to instructor's server for synchronized activities.
+
+**Instructor's machine:**
+```bash
+# Start server for entire class
+python3 fraud_stream_server.py --host 0.0.0.0 --port 5555 --interval 0.5
+
+# Announce your IP address to class
+echo "Connect to server at: $(ifconfig | grep 'inet ' | grep -v 127.0.0.1 | awk '{print $2}' | head -1)"
+```
+
+**Students' machines:**
+```bash
+# Connect to instructor's server
+python3 stream_client_visual.py --host INSTRUCTOR_IP --port 5555 --id YourName
+```
+
+### Quick Setup Guide
+
+#### Step 1: Clone the Repository
+```bash
+git clone https://github.com/YOUR_USERNAME/Data-Stream.git
+cd Data-Stream
+pip3 install -r requirements.txt
+```
+
+#### Step 2: Choose Your Setup
+- **Working alone?** Use `localhost` (Scenario 1)
+- **Working with partners?** One runs server with `--host 0.0.0.0`, others connect via IP (Scenario 2)
+- **In class?** Connect to instructor's IP (Scenario 3)
+
+### Running Multiple Clients
 ```bash
 # Terminal 1: Start server
 python3 fraud_stream_server.py
@@ -238,19 +278,42 @@ python3 stream_client_visual.py --id Student2
 #### Server Options
 ```bash
 python3 fraud_stream_server.py \
-  --host 0.0.0.0 \      # Bind to all interfaces
-  --port 5555 \         # TCP port
-  --interval 0.5        # Seconds between transactions
+  --host localhost \    # localhost: only local connections (default)
+                       # 0.0.0.0: accept network connections
+  --port 5555 \        # TCP port (default: 5555)
+  --interval 0.5       # Seconds between transactions (default: 1.0)
 ```
 
 #### Client Options
 ```bash
 python3 stream_client_visual.py \
-  --host 192.168.1.5 \  # Server IP address
-  --port 5555 \         # Server port
-  --id StudentName \    # Client identifier
-  --max-records 100     # Buffer size for visualizations
+  --host localhost \    # Server address (localhost or IP like 192.168.1.5)
+  --port 5555 \         # Server port (must match server)
+  --id StudentName \    # Your identifier (appears in logs)
+  --max-records 100     # Buffer size for visualizations (default: 100)
 ```
+
+### Network Troubleshooting
+
+#### Connection Issues?
+
+1. **"Connection refused"** - Server not running or wrong IP/port
+   - Verify server is running: `ps aux | grep fraud_stream_server`
+   - Check IP is correct: `ping SERVER_IP`
+
+2. **Firewall blocking** - May need to allow Python through firewall
+   - Mac: System Settings → Security → Firewall → Options
+   - Windows: Allow Python in Windows Defender Firewall
+   - Linux: `sudo ufw allow 5555/tcp`
+
+3. **Find devices on network**:
+   ```bash
+   # See all devices on your subnet
+   arp -a
+   
+   # Find server by scanning port 5555
+   nmap -p 5555 192.168.1.0/24
+   ```
 
 ## Educational Applications
 

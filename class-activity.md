@@ -5,17 +5,62 @@ Build a real-time fraud detection system using PyTorch that connects to a stream
 
 ## Setup Instructions
 
-### 1. Connect to the Transaction Stream Server
-Your instructor will provide the server IP address. The server is broadcasting realistic financial transactions with embedded fraud patterns.
+### Choose Your Working Mode:
+
+#### Option A: Individual Work (Recommended for homework)
+Work independently on your own machine with your own data stream.
 
 ```bash
-# Test connection with the visual client first
-python3 stream_client_visual.py --host INSTRUCTOR_IP --port 5555 --id YourName
+# Clone the repository
+git clone https://github.com/INSTRUCTOR_USERNAME/Data-Stream.git
+cd Data-Stream
+pip install -r requirements.txt
+
+# Terminal 1: Start YOUR server
+python3 fraud_stream_server.py --host localhost --port 5555
+
+# Terminal 2: Connect YOUR client
+python3 stream_client_visual.py --host localhost --port 5555 --id YourName
 ```
 
-### 2. Install Required Libraries
+#### Option B: Group Work (For lab partners)
+One partner runs the server, others connect to share the same data stream.
+
+**Partner 1 (Server):**
 ```bash
-pip install torch torchvision numpy pandas matplotlib streamlit
+# Find your IP
+ifconfig | grep inet  # Look for 192.168.x.x
+
+# Start server for group
+python3 fraud_stream_server.py --host 0.0.0.0 --port 5555
+# Tell partners your IP!
+```
+
+**Other Partners (Clients):**
+```bash
+# Connect to partner's server
+python3 stream_client_visual.py --host PARTNER_IP --port 5555 --id YourName
+# Example: --host 192.168.1.42
+```
+
+#### Option C: Class-Wide Activity (Follow instructor)
+Everyone connects to the instructor's server for synchronized learning.
+
+**Instructor announces:** "Connect to my server at 192.168.1.10"
+
+**All students:**
+```bash
+# Connect to instructor's server
+python3 stream_client_visual.py --host 192.168.1.10 --port 5555 --id YourName
+```
+
+### Quick Test
+After setup, verify your connection works:
+```bash
+# You should see:
+# - Transactions streaming every 0.5 seconds
+# - Graphs updating in real-time
+# - Statistics panel showing totals
 ```
 
 ## Part 1: Data Collection and Analysis (30 minutes)
@@ -31,7 +76,14 @@ from datetime import datetime
 import pickle
 
 class FraudDataCollector:
-    def __init__(self, host, port, collection_size=1000):
+    def __init__(self, host='localhost', port=5555, collection_size=1000):
+        """
+        Args:
+            host: 'localhost' for your own server
+                  or IP address like '192.168.1.10' for shared server
+            port: Usually 5555
+            collection_size: Number of transactions to collect
+        """
         self.host = host
         self.port = port
         self.collection_size = collection_size
@@ -215,10 +267,16 @@ class RealTimeFraudDetector:
         pass
 ```
 
-## Part 4: Streamlit Dashboard (30 minutes)
+## Part 4: Visualization Dashboard (30 minutes)
 
-### Task 4.1: Create Streamlit App
-Create `fraud_dashboard.py`:
+### Task 4.1: Create Visualization Dashboard
+You have two options for visualization:
+
+**Option A: Use the provided visual client** (Recommended)
+The repository includes `stream_client_visual.py` which provides real-time graphs and statistics.
+
+**Option B: Create a Streamlit Dashboard** (Optional - Advanced)
+Create `fraud_dashboard.py` for a web-based dashboard:
 
 ```python
 import streamlit as st
@@ -229,8 +287,8 @@ from datetime import datetime
 import torch
 import numpy as np
 
-# Note: Streamlit Cloud doesn't support raw sockets
-# This dashboard runs locally and connects to your detection client
+# Note: This runs locally alongside your fraud detector
+# It reads saved predictions from your detection client
 
 st.set_page_config(
     page_title="Fraud Detection Dashboard",
@@ -261,14 +319,12 @@ class FraudDashboard:
                 # Load model
                 pass
             
-            # Connection settings (for local testing)
-            st.subheader("Server Connection")
-            host = st.text_input("Server IP", value="localhost")
-            port = st.number_input("Port", value=5555, min_value=1000, max_value=9999)
-            
-            if st.button("Connect to Stream"):
-                # Note: This won't work on Streamlit Cloud
-                st.warning("For local testing only. Streamlit Cloud doesn't support socket connections.")
+            # File upload for saved predictions
+            st.subheader("Load Results")
+            results_file = st.file_uploader("Upload predictions CSV", type=['csv'])
+            if results_file:
+                df = pd.read_csv(results_file)
+                st.session_state.transactions = df.to_dict('records')
         
         # Main dashboard
         col1, col2, col3, col4 = st.columns(4)
@@ -332,16 +388,16 @@ if __name__ == "__main__":
     dashboard.run()
 ```
 
-### Task 4.2: Run Streamlit App Locally
+### Task 4.2: Run Visualization
 ```bash
-# Run locally (Streamlit Cloud doesn't support socket connections)
+# Option A: Use provided visual client (Recommended)
+python3 stream_client_visual.py --host localhost --port 5555
+
+# Option B: Run Streamlit dashboard locally (Optional)
 streamlit run fraud_dashboard.py
 ```
 
-**Note**: The Streamlit app must run locally because Streamlit Cloud doesn't support raw TCP socket connections. Alternative approaches:
-1. Use the Streamlit app to visualize saved results from your detection client
-2. Have your detection client save results to a file that Streamlit reads
-3. Use REST API or websockets (more complex setup)
+**Note**: All components run locally on your machine. The streaming server uses TCP sockets which work perfectly for local development, allowing you to focus on the neural network implementation rather than networking complexities.
 
 ## Part 5: Evaluation and Optimization (30 minutes)
 
@@ -366,7 +422,7 @@ Improve your model by:
    - `fraud_collector.py` - Data collection
    - `fraud_model.py` - PyTorch model
    - `fraud_detection_client.py` - Real-time detection
-   - `fraud_dashboard.py` - Streamlit visualization (local only)
+   - `fraud_dashboard.py` - Optional Streamlit visualization
 
 2. **Model File**:
    - `fraud_detector.pth` - Trained PyTorch model
@@ -377,11 +433,13 @@ Improve your model by:
    - Performance metrics and confusion matrix
    - Screenshot of dashboard detecting fraud
    - Challenges faced and solutions
+   - **Specify which setup you used**: Individual, Group, or Class-wide
 
 4. **Live Demo**:
-   - Connect to instructor's server
-   - Show real-time fraud detection
-   - Demonstrate dashboard (locally)
+   - **Individual**: Run your own server and demonstrate
+   - **Group**: Connect to partner's server
+   - **Class**: Connect to instructor's server
+   - Show real-time fraud detection working
 
 ## Grading Rubric
 
@@ -414,6 +472,19 @@ Improve your model by:
 3. **Monitor in Real-time**: Print statistics every 10 transactions
 4. **Save Everything**: Log all predictions for later analysis
 5. **Test Thoroughly**: Ensure your model generalizes to new users
+
+## Network Setup Quick Reference
+
+| Scenario | Server Command | Client Command |
+|----------|---------------|----------------|
+| **Individual** | `python3 fraud_stream_server.py --host localhost` | `python3 stream_client_visual.py --host localhost` |
+| **Group** | `python3 fraud_stream_server.py --host 0.0.0.0` | `python3 stream_client_visual.py --host SERVER_IP` |
+| **Class** | Instructor runs server with `--host 0.0.0.0` | `python3 stream_client_visual.py --host INSTRUCTOR_IP` |
+
+**Finding IP addresses:**
+- Mac/Linux: `ifconfig | grep inet`
+- Windows: `ipconfig`
+- Look for addresses like `192.168.x.x` or `10.x.x.x`
 
 ## Resources
 
