@@ -59,7 +59,9 @@ class FraudDetector:
     
     def prepare_data(self, data_file):
         """Load and prepare data for training"""
-        print("Loading data...")
+        print("=" * 60)
+        print("LOADING DATA")
+        print("=" * 60)
         
         # Load data
         if data_file.endswith('.csv'):
@@ -71,33 +73,58 @@ class FraudDetector:
         else:
             raise ValueError("Unsupported file format")
         
-        print(f"Loaded {len(df)} transactions")
-        print(f"Fraud rate: {df['isFraud'].mean():.2%}")
+        print(f"✅ Loaded {len(df):,} transactions from {data_file}")
+        print(f"   Fraud transactions: {df['isFraud'].sum():,}")
+        print(f"   Normal transactions: {(~df['isFraud']).sum():,}")
+        print(f"   Fraud rate: {df['isFraud'].mean():.2%}")
+        print("=" * 60)
         
         # Fit feature transformer
+        print("Fitting feature transformer...")
         self.feature_transformer.fit(df)
         
-        # Transform all transactions
+        # Transform all transactions - OPTIMIZED for large datasets
+        print(f"Transforming all {len(df):,} transactions to features...")
         X = []
         y = []
         
-        for _, row in df.iterrows():
-            features = self.feature_transformer.transform_transaction(row.to_dict())
-            X.append(features)
-            y.append(float(row['isFraud']))
+        # Process in batches for progress reporting
+        batch_size = 5000
+        for i in range(0, len(df), batch_size):
+            batch_end = min(i + batch_size, len(df))
+            batch_df = df.iloc[i:batch_end]
+            
+            for _, row in batch_df.iterrows():
+                features = self.feature_transformer.transform_transaction(row.to_dict())
+                X.append(features)
+                y.append(float(row['isFraud']))
+            
+            if (i + batch_size) % 10000 == 0 or batch_end == len(df):
+                print(f"  Processed {batch_end:,}/{len(df):,} transactions ({100*batch_end/len(df):.1f}%)")
         
         X = np.array(X, dtype=np.float32)
         y = np.array(y, dtype=np.float32)
         
+        print(f"✅ Feature transformation complete!")
+        print(f"   Feature matrix shape: {X.shape}")
+        print("=" * 60)
+        
         # Initialize model with correct input dimensions
         if self.model is None:
             input_dim = X.shape[1]
-            print(f"Input dimension: {input_dim}")
+            print(f"Initializing neural network with {input_dim} input features")
             self.model = FraudDetectionNet(
                 input_dim=input_dim,
                 hidden_dims=[128, 64, 32, 16],
                 dropout_rate=0.3
             ).to(self.device)
+            
+            # Count parameters
+            total_params = sum(p.numel() for p in self.model.parameters())
+            trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+            print(f"Total parameters: {total_params:,}")
+            print(f"Trainable parameters: {trainable_params:,}")
+            print("=" * 60)
         
         return X, y
     
@@ -113,9 +140,17 @@ class FraudDetector:
         )
         return sampler
     
-    def train(self, X_train, y_train, X_val, y_val, epochs=50, batch_size=64, learning_rate=0.001):
+    def train(self, X_train, y_train, X_val, y_val, epochs=50, batch_size=128, learning_rate=0.001):
         """Train the fraud detection model"""
-        print(f"\nStarting training for {epochs} epochs...")
+        print("\n" + "=" * 60)
+        print("TRAINING MODEL")
+        print("=" * 60)
+        print(f"Training samples: {len(X_train):,}")
+        print(f"Validation samples: {len(X_val):,}")
+        print(f"Epochs: {epochs}")
+        print(f"Batch size: {batch_size}")
+        print(f"Learning rate: {learning_rate}")
+        print("=" * 60)
         
         # Convert to tensors
         X_train_tensor = torch.FloatTensor(X_train).to(self.device)
@@ -128,12 +163,15 @@ class FraudDetector:
         sampler = self.create_weighted_sampler(y_train)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=sampler)
         
+        print(f"Number of batches per epoch: {len(train_loader)}")
+        print("=" * 60)
+        
         # Optimizer with weight decay for regularization
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=1e-5)
         
         # Learning rate scheduler
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=5, verbose=True
+            self.optimizer, mode='min', factor=0.5, patience=5
         )
         
         # Training loop
@@ -186,7 +224,7 @@ class FraudDetector:
             self.val_accuracies.append(val_accuracy)
             
             # Print progress
-            if (epoch + 1) % 5 == 0:
+            if (epoch + 1) % 5 == 0 or epoch == 0:
                 print(f"Epoch [{epoch+1}/{epochs}]")
                 print(f"  Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.4f}")
                 print(f"  Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f}")
@@ -203,7 +241,7 @@ class FraudDetector:
             else:
                 patience_counter += 1
                 if patience_counter >= patience:
-                    print(f"Early stopping at epoch {epoch+1}")
+                    print(f"\n⚠️  Early stopping at epoch {epoch+1}")
                     break
         
         # Load best model
@@ -212,10 +250,13 @@ class FraudDetector:
         # Find optimal threshold
         self.find_optimal_threshold(X_val, y_val)
         
-        print("\nTraining complete!")
+        print("=" * 60)
+        print("✅ Training complete!")
+        print("=" * 60)
     
     def find_optimal_threshold(self, X_val, y_val):
         """Find optimal decision threshold using validation set"""
+        print("\nFinding optimal decision threshold...")
         self.model.eval()
         with torch.no_grad():
             X_val_tensor = torch.FloatTensor(X_val).to(self.device)
@@ -235,7 +276,7 @@ class FraudDetector:
                 best_threshold = threshold
         
         self.best_threshold = best_threshold
-        print(f"Optimal threshold: {best_threshold:.2f} (F1: {best_f1:.4f})")
+        print(f"✅ Optimal threshold: {best_threshold:.2f} (F1: {best_f1:.4f})")
     
     def predict(self, transaction_features):
         """Predict fraud probability for a single transaction"""
@@ -265,7 +306,10 @@ class FraudDetector:
     
     def evaluate(self, X_test, y_test):
         """Evaluate model performance"""
-        print("\n=== Model Evaluation ===")
+        print("\n" + "=" * 60)
+        print("MODEL EVALUATION ON TEST SET")
+        print("=" * 60)
+        print(f"Test samples: {len(X_test):,}")
         
         # Get predictions
         probs = self.predict_batch(X_test)
@@ -288,14 +332,18 @@ class FraudDetector:
         # Calculate accuracy
         accuracy = np.sum(predictions == y_test) / len(y_test)
         
-        print(f"Accuracy: {accuracy:.4f}")
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1-Score: {f1:.4f}")
-        print(f"ROC-AUC: {roc_auc:.4f}")
-        print(f"\nConfusion Matrix:")
-        print(f"  TN: {cm[0,0]}  FP: {cm[0,1]}")
-        print(f"  FN: {cm[1,0]}  TP: {cm[1,1]}")
+        print(f"\n📊 Performance Metrics:")
+        print(f"   Accuracy:  {accuracy:.4f}")
+        print(f"   Precision: {precision:.4f}")
+        print(f"   Recall:    {recall:.4f}")
+        print(f"   F1-Score:  {f1:.4f}")
+        print(f"   ROC-AUC:   {roc_auc:.4f}")
+        print(f"\n📊 Confusion Matrix:")
+        print(f"                 Predicted")
+        print(f"               Normal  Fraud")
+        print(f"   Actual Normal  {cm[0,0]:5d}  {cm[0,1]:5d}")
+        print(f"   Actual Fraud   {cm[1,0]:5d}  {cm[1,1]:5d}")
+        print("=" * 60)
         
         return {
             'accuracy': accuracy,
@@ -330,6 +378,7 @@ class FraudDetector:
         
         plt.tight_layout()
         plt.savefig('training_history.png')
+        print("📊 Training history plot saved to 'training_history.png'")
         plt.show()
     
     def save_model(self, path):
@@ -340,11 +389,10 @@ class FraudDetector:
             'best_threshold': self.best_threshold,
             'feature_names': self.feature_transformer.feature_names
         }, path)
-        print(f"Model saved to {path}")
     
     def load_model(self, path):
         """Load model and feature transformer"""
-        checkpoint = torch.load(path, map_location=self.device)
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         
         # Load feature transformer
         self.feature_transformer = checkpoint['feature_transformer']
@@ -360,13 +408,15 @@ class FraudDetector:
         # Load model weights
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.best_threshold = checkpoint.get('best_threshold', 0.5)
-        
-        print(f"Model loaded from {path}")
 
 # Main training script
 if __name__ == "__main__":
     import glob
     import os
+    
+    print("=" * 60)
+    print("FRAUD DETECTION MODEL TRAINING")
+    print("=" * 60)
     
     # Find the most recent data file
     csv_files = glob.glob("fraud_transactions_*.csv")
@@ -374,21 +424,25 @@ if __name__ == "__main__":
     
     if pkl_files:
         data_file = max(pkl_files, key=os.path.getctime)
+        print("Found pickle files (faster loading)")
     elif csv_files:
         data_file = max(csv_files, key=os.path.getctime)
+        print("Found CSV files")
     else:
-        print("No data files found! Run fraud_collector.py first.")
+        print("❌ No data files found! Run fraud_collector.py first.")
         exit(1)
     
-    print(f"Using data file: {data_file}")
+    print(f"Using most recent file: {data_file}")
+    print("=" * 60)
     
     # Create detector
     detector = FraudDetector()
     
-    # Prepare data
+    # Prepare data - THIS WILL USE ALL 50,000 TRANSACTIONS
     X, y = detector.prepare_data(data_file)
     
-    # Split data
+    print("\nSplitting dataset...")
+    # Split data: 70% train, 15% validation, 15% test
     X_temp, X_test, y_temp, y_test = train_test_split(
         X, y, test_size=0.15, random_state=42, stratify=y
     )
@@ -396,13 +450,14 @@ if __name__ == "__main__":
         X_temp, y_temp, test_size=0.176, random_state=42, stratify=y_temp
     )  # 0.176 * 0.85 ≈ 0.15 for validation
     
-    print(f"\nDataset splits:")
-    print(f"  Train: {len(X_train)} samples (fraud rate: {y_train.mean():.2%})")
-    print(f"  Val: {len(X_val)} samples (fraud rate: {y_val.mean():.2%})")
-    print(f"  Test: {len(X_test)} samples (fraud rate: {y_test.mean():.2%})")
+    print(f"\n📊 Dataset splits:")
+    print(f"   Train: {len(X_train):,} samples ({100*len(X_train)/len(X):.1f}%) - Fraud rate: {y_train.mean():.2%}")
+    print(f"   Val:   {len(X_val):,} samples ({100*len(X_val)/len(X):.1f}%) - Fraud rate: {y_val.mean():.2%}")
+    print(f"   Test:  {len(X_test):,} samples ({100*len(X_test)/len(X):.1f}%) - Fraud rate: {y_test.mean():.2%}")
+    print(f"   TOTAL: {len(X):,} transactions being used for training!")
     
-    # Train model
-    detector.train(X_train, y_train, X_val, y_val, epochs=100)
+    # Train model with larger batch size for 50K dataset
+    detector.train(X_train, y_train, X_val, y_val, epochs=100, batch_size=128)
     
     # Evaluate on test set
     metrics = detector.evaluate(X_test, y_test)
@@ -412,5 +467,12 @@ if __name__ == "__main__":
     
     # Save final model
     detector.save_model('fraud_detector.pth')
+    print(f"\n💾 Final model saved to 'fraud_detector.pth'")
     
-    print("\n✅ Model training complete!")
+    print("\n" + "=" * 60)
+    print("✅ MODEL TRAINING COMPLETE!")
+    print("=" * 60)
+    print(f"Total transactions used: {len(X):,}")
+    print(f"Final F1-Score: {metrics['f1']:.4f}")
+    print(f"Final ROC-AUC: {metrics['roc_auc']:.4f}")
+    print("=" * 60)

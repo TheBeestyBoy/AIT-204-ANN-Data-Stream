@@ -21,10 +21,10 @@ pip install torch pandas numpy scikit-learn matplotlib streamlit plotly
 First, make sure the fraud stream server is running:
 ```bash
 # Terminal 1: Start YOUR server (Individual work)
-python3 fraud_stream_server.py --host localhost --port 5555
+python fraud_stream_server.py --host localhost --port 5555
 
 # OR for group work (one partner runs server)
-python3 fraud_stream_server.py --host 0.0.0.0 --port 5555
+python fraud_stream_server.py --host 0.0.0.0 --port 5555
 ```
 
 ### 3. Collect Training Data

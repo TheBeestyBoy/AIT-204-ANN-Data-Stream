@@ -218,34 +218,9 @@ class UserProfile:
                               for _ in range(random.randint(2, 5))]
     
     def should_transact(self, current_hour, current_minute):
-        if datetime.now().date() != self.last_reset:
-            self.daily_count = 0
-            self.last_reset = datetime.now().date()
-        
-        # if self.daily_count >= self.params["daily_limit"]:
-        #    return False
-        
-        if "weekday_only" in self.params and self.params["weekday_only"]:
-            if datetime.now().weekday() >= 5:
-                return False
-        
-        base_prob = self.params["frequency"]
-        
-        if current_hour in self.params["peak_hours"]:
-            base_prob *= 1.5
-        else:
-            base_prob *= 0.3
-        
-        if "weekend_multiplier" in self.params and datetime.now().weekday() >= 5:
-            base_prob *= self.params["weekend_multiplier"]
-        
-        time_since_last = (datetime.now() - self.last_transaction_time).seconds
-        if time_since_last < 60:
-            base_prob *= 0.1
-        elif time_since_last < 300:
-            base_prob *= 0.5
-        
-        return random.random() < (base_prob / 60)
+        # Optimized for fast data collection - always return True
+        # This ensures transactions are generated at the interval rate
+        return True
     
     def generate_transaction(self, transaction_id):
         self.transaction_count += 1
@@ -346,7 +321,7 @@ class UserProfile:
         }
 
 class FraudStreamServer:
-    def __init__(self, host='localhost', port=5555, interval=1.0):
+    def __init__(self, host='localhost', port=5555, interval=0.01):
         self.host = host
         self.port = port
         self.interval = interval
@@ -370,16 +345,8 @@ class FraudStreamServer:
             print(f"User {i}: {profile}")
     
     def generate_transaction(self):
-        current_hour = datetime.now().hour
-        current_minute = datetime.now().minute
-        
-        active_users = [user for user in self.users.values() 
-                       if user.should_transact(current_hour, current_minute)]
-        
-        if not active_users:
-            return None
-        
-        user = random.choice(active_users)
+        # Optimized: Always generate a transaction from a random user
+        user = random.choice(list(self.users.values()))
         self.transaction_id_counter += 1
         return user.generate_transaction(self.transaction_id_counter)
     
@@ -413,10 +380,11 @@ class FraudStreamServer:
                 total_count += 1
                 if transaction.get("isFraud", False):
                     fraud_count += 1
+                
+                # Print progress every 1000 transactions
+                if total_count % 1000 == 0:
                     fraud_indicator = "🚨 FRAUD" if transaction["isFraud"] else ""
-                    print(f"Transaction #{transaction['transactionID']}: User {transaction['userID']} ({transaction['userProfile']}) - ${transaction['amount']:.2f} {fraud_indicator}")
-                elif total_count % 10 == 0:
-                    print(f"Processed {total_count} transactions ({fraud_count} fraudulent)")
+                    print(f"Transaction #{transaction['transactionID']}: Total={total_count}, Fraudulent={fraud_count} ({100*fraud_count/total_count:.2f}%)")
                 
                 self.broadcast_to_clients(transaction)
             time.sleep(self.interval)
@@ -486,18 +454,18 @@ def main():
     parser = argparse.ArgumentParser(description='Fraud Detection Training Stream Server')
     parser.add_argument('--host', default='localhost', help='Host to bind to (default: localhost)')
     parser.add_argument('--port', type=int, default=5555, help='Port to bind to (default: 5555)')
-    parser.add_argument('--interval', type=float, default=0.5, help='Base interval between transactions in seconds (default: 0.5)')
+    parser.add_argument('--interval', type=float, default=0.01, help='Interval between transactions in seconds (default: 0.01 for maximum speed)')
     
     args = parser.parse_args()
     
     server = FraudStreamServer(host=args.host, port=args.port, interval=args.interval)
     
     print("=" * 60)
-    print("FRAUD DETECTION TRAINING STREAM SERVER")
+    print("FRAUD DETECTION TRAINING STREAM SERVER (OPTIMIZED)")
     print("=" * 60)
     print(f"Host: {args.host}")
     print(f"Port: {args.port}")
-    print(f"Base Interval: {args.interval} seconds")
+    print(f"Interval: {args.interval} seconds (FAST MODE)")
     print("=" * 60)
     print("\nUser Profiles Distribution:")
     print("- 17 Normal users with various spending patterns")

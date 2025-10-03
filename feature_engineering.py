@@ -4,11 +4,19 @@ from sklearn.preprocessing import StandardScaler
 from collections import defaultdict
 import hashlib
 
+def default_user_stats():
+    """Default factory for user stats"""
+    return {'count': 0, 'total': 0, 'mean': 0, 'std': 1}
+
+def default_merchant_stats():
+    """Default factory for merchant stats"""
+    return {'fraud_count': 0, 'total_count': 0}
+
 class TransactionFeatures:
     def __init__(self):
         self.scaler = StandardScaler()
-        self.user_stats = defaultdict(lambda: {'count': 0, 'total': 0, 'mean': 0, 'std': 1})
-        self.merchant_stats = defaultdict(lambda: {'fraud_count': 0, 'total_count': 0})
+        self.user_stats = defaultdict(default_user_stats)
+        self.merchant_stats = defaultdict(default_merchant_stats)
         self.fitted = False
         
         self.feature_names = [
@@ -27,6 +35,21 @@ class TransactionFeatures:
             'merchant_category',  # Encoded merchant category
             'user_trust_score'  # User's historical fraud rate
         ]
+    
+    def __getstate__(self):
+        """Custom pickle method to handle defaultdict"""
+        state = self.__dict__.copy()
+        # Convert defaultdict to regular dict for pickling
+        state['user_stats'] = dict(state['user_stats'])
+        state['merchant_stats'] = dict(state['merchant_stats'])
+        return state
+    
+    def __setstate__(self, state):
+        """Custom unpickle method to restore defaultdict"""
+        self.__dict__.update(state)
+        # Restore as defaultdict
+        self.user_stats = defaultdict(default_user_stats, self.user_stats)
+        self.merchant_stats = defaultdict(default_merchant_stats, self.merchant_stats)
     
     def fit(self, transactions_df):
         """Fit the scaler and collect statistics from training data"""
