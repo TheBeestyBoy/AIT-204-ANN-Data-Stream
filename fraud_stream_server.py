@@ -222,8 +222,8 @@ class UserProfile:
             self.daily_count = 0
             self.last_reset = datetime.now().date()
         
-        if self.daily_count >= self.params["daily_limit"]:
-            return False
+        # if self.daily_count >= self.params["daily_limit"]:
+        #    return False
         
         if "weekday_only" in self.params and self.params["weekday_only"]:
             if datetime.now().weekday() >= 5:
