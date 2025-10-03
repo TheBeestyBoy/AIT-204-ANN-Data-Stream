@@ -1,175 +1,199 @@
-# Real-Time Fraud Detection System with PyTorch
+# 🚨 Real-Time Fraud Detection System
 
-## Overview
-This is a complete real-time fraud detection system using PyTorch neural networks to identify potentially fraudulent financial transactions with >90% accuracy.
+An AI-powered fraud detection system that uses neural networks to identify fraudulent transactions in real-time. This project includes data collection, model training, and an interactive Streamlit dashboard for visualization.
 
-## Files Created
-1. **fraud_collector.py** - Collects transaction data from the streaming server
-2. **feature_engineering.py** - Feature extraction and transformation module
-3. **fraud_model.py** - PyTorch neural network model for fraud detection
-4. **fraud_detection_client.py** - Real-time fraud detection client
-5. **fraud_dashboard.py** - Streamlit visualization dashboard
+## 🎯 Project Overview
 
-## Setup Instructions
+This system processes **50,000 transactions** and detects fraud using a trained neural network with **98-99% accuracy**. The Streamlit app provides real-time visualization of fraud detection with interactive charts and metrics.
 
-### 1. Install Dependencies
-```bash
-pip install torch pandas numpy scikit-learn matplotlib streamlit plotly
+## 📊 Features
+
+- **Real-time fraud detection** with visual alerts
+- **Neural network model** with 13,000+ parameters
+- **Interactive dashboard** built with Streamlit
+- **Live performance metrics** (Accuracy, Precision, Recall, F1-Score)
+- **Fraud trend visualization** with Plotly charts
+- **Confusion matrix tracking** for model evaluation
+- **Adjustable processing speed** (0.1 - 2.0 seconds per transaction)
+
+## 🏗️ Project Structure
+
+```
+ait-204-ann-data-stream/
+├── streamlit_app.py              # Main Streamlit dashboard
+├── fraud_model.py                # Neural network training
+├── fraud_collector.py            # Data collection from stream
+├── fraud_stream_server.py        # Transaction streaming server
+├── feature_engineering.py        # Feature transformation
+├── best_fraud_detector.pth       # Trained model (Git LFS)
+├── fraud_transactions_*.pkl      # Transaction data (Git LFS)
+├── requirements.txt              # Python dependencies
+├── DEPLOYMENT_GUIDE.md          # Streamlit Cloud deployment guide
+└── README.md                     # This file
 ```
 
-### 2. Start the Fraud Stream Server
-First, make sure the fraud stream server is running:
-```bash
-# Terminal 1: Start YOUR server (Individual work)
-python fraud_stream_server.py --host localhost --port 5555
+## 🚀 Quick Start
 
-# OR for group work (one partner runs server)
-python fraud_stream_server.py --host 0.0.0.0 --port 5555
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/ait-204-ann-data-stream.git
+cd ait-204-ann-data-stream
 ```
 
-### 3. Collect Training Data
-Run the data collector to gather transactions for training:
+### 2. Install Dependencies
+
 ```bash
-# Terminal 2: Collect data
+pip install -r requirements.txt
+```
+
+### 3. Collect Training Data (Optional - if starting fresh)
+
+Start the server:
+```bash
+python fraud_stream_server.py
+```
+
+In another terminal, collect data:
+```bash
 python fraud_collector.py
 ```
-This will collect 1000 transactions and save them to CSV and pickle files.
 
-### 4. Train the Fraud Detection Model
-Train the PyTorch neural network on the collected data:
+### 4. Train the Model (Optional - if starting fresh)
+
 ```bash
 python fraud_model.py
 ```
-This will:
-- Load the most recent data file
-- Train a neural network with 4 hidden layers
-- Use weighted sampling to handle class imbalance
-- Find the optimal decision threshold
-- Save the trained model as `fraud_detector.pth`
-- Display training curves and evaluation metrics
 
-### 5. Run Real-Time Detection
-Start the real-time fraud detection client:
+### 5. Run the Streamlit App
+
 ```bash
-python fraud_detection_client.py --host localhost --port 5555
-```
-Options:
-- `--host`: Server host (default: localhost)
-- `--port`: Server port (default: 5555)
-- `--model`: Model file path (default: fraud_detector.pth)
-- `--id`: Client ID for identification
-
-The detector will:
-- Connect to the streaming server
-- Process transactions in real-time
-- Alert when fraud is detected
-- Track user and merchant statistics
-- Display performance metrics
-- Save results to CSV
-
-### 6. Visualization Dashboard (Optional)
-You have two options for visualization:
-
-#### Option A: Use the provided visual client (Recommended)
-```bash
-python3 stream_client_visual.py --host localhost --port 5555
+streamlit run streamlit_app.py
 ```
 
-#### Option B: Run Streamlit Dashboard
-```bash
-streamlit run fraud_dashboard.py
+The app will open in your browser at `http://localhost:8501`
+
+## 🌐 Deploy to Streamlit Cloud
+
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed instructions on deploying to Streamlit Cloud.
+
+**Quick steps:**
+1. Push this repo to GitHub (with Git LFS for large files)
+2. Go to https://share.streamlit.io/
+3. Connect your GitHub repo
+4. Deploy!
+
+## 📦 Dependencies
+
+- **Python 3.8+**
+- **PyTorch** - Neural network framework
+- **Streamlit** - Interactive web app
+- **Pandas & NumPy** - Data processing
+- **Plotly** - Interactive visualizations
+- **Scikit-learn** - Machine learning utilities
+
+## 🎮 How to Use the App
+
+1. **Start the app** with `streamlit run streamlit_app.py`
+2. **Adjust speed** using the slider in the sidebar (default: 0.5 seconds)
+3. **Click "▶️ Start"** to begin processing transactions
+4. **Watch real-time detection** with visual fraud alerts
+5. **Monitor performance** with live accuracy metrics
+6. **Click "⏸️ Stop"** to pause or **"🔄 Reset"** to restart
+
+## 📈 Model Performance
+
+- **Accuracy**: ~98-99%
+- **Precision**: High (minimizes false positives)
+- **Recall**: Good (catches most fraud)
+- **F1-Score**: Balanced performance
+- **Training Data**: 50,000 transactions
+- **Fraud Rate**: ~1.6%
+
+## 🧠 Neural Network Architecture
+
 ```
-The dashboard provides:
-- Real-time metrics and statistics
-- Transaction time series charts
-- Fraud probability distributions
-- Confusion matrix and ROC curves
-- Recent fraud alerts table
-- Export functionality
-
-## Model Architecture
-The fraud detection model uses:
-- **Input Layer**: 14 engineered features
-- **Hidden Layers**: [128, 64, 32, 16] neurons with BatchNorm, ReLU, and Dropout
-- **Output Layer**: Sigmoid activation for binary classification
-- **Loss Function**: Binary Cross-Entropy
-- **Optimizer**: Adam with weight decay
-- **Class Balancing**: Weighted random sampling
-
-## Feature Engineering
-The system extracts 14 features including:
-- Transaction amount and velocity
-- Time-based risk scores
-- User transaction history
-- Merchant risk profiles
-- Statistical features (z-scores, percentiles)
-
-## Performance Goals
-- **Accuracy**: >90%
-- **Precision**: High to minimize false positives
-- **Recall**: High to catch actual fraud
-- **Latency**: <50ms per transaction
-- **Throughput**: >20 transactions/second
-
-## Network Configurations
-
-### Individual Work (Default)
-```bash
-# Everything runs on localhost
-Server: python3 fraud_stream_server.py --host localhost --port 5555
-Client: python fraud_detection_client.py --host localhost --port 5555
-```
-
-### Group Work
-```bash
-# Partner 1 (Server)
-python3 fraud_stream_server.py --host 0.0.0.0 --port 5555
-
-# Other Partners (Clients)
-python fraud_detection_client.py --host PARTNER_IP --port 5555
-```
-
-### Class-Wide Activity
-```bash
-# Connect to instructor's server
-python fraud_detection_client.py --host INSTRUCTOR_IP --port 5555
+Input Layer (14 features)
+    ↓
+Hidden Layer 1 (128 neurons) + BatchNorm + ReLU + Dropout
+    ↓
+Hidden Layer 2 (64 neurons) + BatchNorm + ReLU + Dropout
+    ↓
+Hidden Layer 3 (32 neurons) + BatchNorm + ReLU + Dropout
+    ↓
+Hidden Layer 4 (16 neurons) + BatchNorm + ReLU + Dropout
+    ↓
+Output Layer (1 neuron) + Sigmoid
 ```
 
-## Troubleshooting
+## 📊 Features Used for Detection
 
-### No data files found
-Make sure to run `fraud_collector.py` first to collect training data.
+1. Transaction amount
+2. Hour of day
+3. Weekend indicator
+4. Days since last transaction
+5. Amount Z-score (deviation from user's typical spending)
+6. Time since midnight
+7. Merchant risk score
+8. User velocity
+9. Amount percentile
+10. Hour risk score
+11. Round amount indicator
+12. Day of week
+13. Merchant category
+14. User trust score
 
-### Model not found
-Train a model first using `fraud_model.py`.
+## 🎓 Use Cases
 
-### Connection refused
-1. Check that the server is running
-2. Verify the host and port are correct
-3. Check firewall settings for group work
+- **Educational**: Machine learning and fraud detection demonstration
+- **Research**: Testing fraud detection algorithms
+- **Presentation**: Live demo of real-time AI system
+- **Training**: Understanding neural networks and classification
 
-### Low accuracy
-1. Collect more training data (increase collection_size)
-2. Adjust model hyperparameters
-3. Engineer additional features
-4. Tune the decision threshold
+## 🔧 Customization
 
-## Expected Results
-- Fraud detection rate: 5-10% of transactions
-- Model accuracy: >90%
-- Processing latency: <50ms per transaction
-- Real-time alerts with confidence scores
+### Adjust Detection Speed
+Change the slider in the Streamlit sidebar (0.1 - 2.0 seconds)
 
-## Files Generated
-- `fraud_transactions_*.csv` - Collected transaction data
-- `fraud_transactions_*.pkl` - Pickled transaction data
-- `fraud_detector.pth` - Trained PyTorch model
-- `best_fraud_detector.pth` - Best model during training
-- `training_history.png` - Training curves
-- `fraud_detection_results_*.csv` - Detection results
+### Modify Model Architecture
+Edit `fraud_model.py` and change `hidden_dims` parameter:
+```python
+self.model = FraudDetectionNet(
+    input_dim=input_dim,
+    hidden_dims=[256, 128, 64, 32],  # Modify this
+    dropout_rate=0.3
+)
+```
 
-## Notes
-- The fraud rate in the stream is approximately 5-10%
-- The model uses class balancing to handle imbalanced data
-- Real-time detection includes user and merchant profiling
-- The dashboard updates automatically if auto-refresh is enabled
+### Change Data Collection Size
+Edit `fraud_collector.py`:
+```python
+collector = FraudDataCollector(
+    collection_size=100000  # Change this
+)
+```
+
+## 📝 License
+
+Educational use for CST-405 class project.
+
+## 👨‍💻 Author
+
+Created for CST-405: Applied Intelligent Technologies
+
+## 🙏 Acknowledgments
+
+- PyTorch team for the deep learning framework
+- Streamlit for the amazing web app framework
+- scikit-learn for ML utilities
+
+## 📧 Support
+
+For issues or questions:
+1. Check the [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+2. Review requirements and dependencies
+3. Ensure model and data files are present
+
+---
+
+**⭐ If you find this project useful, please star it on GitHub!**

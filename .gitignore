@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+
+# Training artifacts (keep the best model)
+training_history.png
+fraud_detector.pth
+
+# DO NOT ignore these - they're needed for deployment!
+# best_fraud_detector.pth
+# fraud_transactions_*.pkl
+# fraud_transactions_*.csv
